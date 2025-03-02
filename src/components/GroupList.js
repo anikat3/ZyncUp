@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import Link from 'next/link';
 
 export default function GroupList({ session }) {
   const [groups, setGroups] = useState([]);
@@ -162,13 +163,24 @@ export default function GroupList({ session }) {
                     {group.members.length} members
                   </span>
                   {group.created_by === session.user.email && (
-                    <button
-                      onClick={() => handleDeleteGroup(group.id)}
-                      disabled={deletingGroup}
-                      className="px-3 py-1 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
-                    >
-                      {deletingGroup ? 'Deleting...' : 'Delete'}
-                    </button>
+                    <>
+                      <Link
+                        href={`/groups/${group.id}/availability`}
+                        className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
+                      >
+                        Find Times
+                      </Link>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering toggleGroup
+                          handleDeleteGroup(group.id);
+                        }}
+                        disabled={deletingGroup}
+                        className="px-3 py-1 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {deletingGroup ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </>
                   )}
                   <span className="text-xl text-gray-500">
                     {expandedGroup === group.id ? '▼' : '▶'}
