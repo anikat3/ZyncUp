@@ -33,15 +33,21 @@ export async function GET() {
     const calendar = google.calendar({ 
       version: 'v3', 
       auth: oauth2Client,
-      timeout: 10000 // 10 second timeout
+      timeout: 30000 // Increased timeout to 30 seconds for larger data fetch
     });
+
+    // Calculate time range for one week
+    const timeMin = new Date();
+    const timeMax = new Date(timeMin);
+    timeMax.setDate(timeMax.getDate() + 7);
     
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: new Date().toISOString(),
-      maxResults: 10,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
+      // Remove maxResults to get all events in the time range
     });
 
     if (!response.data.items) {

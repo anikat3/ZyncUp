@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { db } from '@/firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import crypto from 'crypto';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { validateEmails } from '@/utils/firebase';
 
 export async function POST(request) {
@@ -30,9 +29,6 @@ export async function POST(request) {
       return Response.json({ error: 'No valid members found' }, { status: 400 });
     }
 
-    // Create unique invite token
-    const inviteToken = crypto.randomBytes(32).toString('hex');
-
     // Add group to Firestore
     const groupsRef = collection(db, "groups");
     const newGroup = await addDoc(groupsRef, {
@@ -40,13 +36,11 @@ export async function POST(request) {
       members: validEmails,
       created_at: serverTimestamp(),
       created_by: session.user.email,
-      invite_token: inviteToken,
       updated_at: serverTimestamp()
     });
 
     return Response.json({ 
       groupId: newGroup.id,
-      inviteToken: inviteToken,
       members: validEmails
     });
 
