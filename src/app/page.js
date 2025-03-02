@@ -27,6 +27,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [timezoneSelected, setTimezoneSelected] = useState(false)
   const [userTimezone, setUserTimezone] = useState(null) // State to hold user's timezone
+  const [showTimezoneSelector, setShowTimezoneSelector] = useState(false); // State to control timezone selector visibility
 
   // Handle hydration mismatch
   useEffect(() => {
@@ -55,6 +56,24 @@ export default function Home() {
       initializeUser()
     }
   }, [session, mounted])
+
+  const handleTimezoneSelect = async (timezone) => {
+    if (session?.user) {
+      try {
+        // Update user data with selected timezone
+        await saveUserToDatabase({ ...session.user, timezone })
+        setUserTimezone(timezone); // Update user timezone state
+        setTimezoneSelected(true); // Mark timezone as selected
+        setShowTimezoneSelector(false); // Hide timezone selector
+      } catch (error) {
+        console.error("Failed to save timezone:", error)
+      }
+    }
+  }
+
+  const toggleTimezoneSelector = () => {
+    setShowTimezoneSelector(!showTimezoneSelector);
+  }
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -100,19 +119,6 @@ export default function Home() {
     }
   }
 
-  const handleTimezoneSelect = async (timezone) => {
-    if (session?.user) {
-      try {
-        // Update user data with selected timezone
-        await saveUserToDatabase({ ...session.user, timezone })
-        setUserTimezone(timezone); // Update user timezone state
-        setTimezoneSelected(true); // Mark timezone as selected
-      } catch (error) {
-        console.error("Failed to save timezone:", error)
-      }
-    }
-  }
-
   if (status === "loading") {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -122,8 +128,15 @@ export default function Home() {
       <div className="min-h-screen flex flex-col items-center p-8 bg-gray-50">
         {/* Display user's timezone if selected */}
         {timezoneSelected ? (
-          <div className="mb-4">Your selected timezone: {userTimezone}</div>
+          <div className="mb-4 cursor-pointer" onClick={toggleTimezoneSelector}>
+            Your selected timezone: {userTimezone}
+          </div>
         ) : (
+          <TimezoneSelector onTimezoneSelect={handleTimezoneSelect} />
+        )}
+
+        {/* Show timezone selector if toggled */}
+        {showTimezoneSelector && (
           <TimezoneSelector onTimezoneSelect={handleTimezoneSelect} />
         )}
 
