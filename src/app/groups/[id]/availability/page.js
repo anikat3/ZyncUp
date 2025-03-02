@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
+import CalendarView from '@/components/CalendarView';
 
 export default function GroupAvailability() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ export default function GroupAvailability() {
   const [error, setError] = useState(null);
   const [groupName, setGroupName] = useState('');
   const [duration, setDuration] = useState(60);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const fetchAvailability = async (selectedDuration = duration) => {
     if (!session?.user?.email) return;
@@ -46,6 +48,10 @@ export default function GroupAvailability() {
     }
   };
 
+  const toggleCalendar = () => {
+    setShowCalendar(!showCalendar);
+  };
+
   useEffect(() => {
     fetchAvailability();
   }, [id, session]);
@@ -75,6 +81,15 @@ export default function GroupAvailability() {
         {groupName ? `Available Times for ${groupName}` : 'Available Meeting Times'}
       </h1>
       
+      <button 
+        onClick={toggleCalendar} 
+        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded"
+      >
+        {showCalendar ? 'Hide Slots' : 'Find Slots'}
+      </button>
+
+      {showCalendar && <CalendarView slots={availableSlots} userTimezone={session.user.timezone} />}
+
       <div className="mb-6">
         <select
           className="border rounded px-3 py-2"
