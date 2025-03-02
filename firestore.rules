@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.token.email == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    match /groups/{groupId} {
+      allow read: if isAuthenticated() && 
+        (resource == null || resource.data.members.hasAny([request.auth.token.email]));
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        resource.data.members.hasAny([request.auth.token.email]);
+    }
+
+    match /calendar_events/{userId} {
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        exists(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.members.hasAny([request.auth.token.email])
+      );
+      allow write: if isOwner(userId);
+    }
+  }
+} 
