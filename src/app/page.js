@@ -3,9 +3,10 @@
 import { useSession, signIn, signOut } from "next-auth/react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { saveUserToDatabase } from "@/utils/firebase"
+import { saveUserToDatabase, getUserDetails } from "@/utils/firebase"
 import GroupManager from "@/components/GroupManager"
 import GroupList from "@/components/GroupList"
+import TimezoneSelector from "@/components/TimezoneSelector"
 
 // Move formatDate outside component to avoid hydration issues
 const formatDate = (dateString) => {
@@ -24,6 +25,8 @@ export default function Home() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [timezoneSelected, setTimezoneSelected] = useState(false)
+  const [userTimezone, setUserTimezone] = useState(null) // State to hold user's timezone
 
   // Handle hydration mismatch
   useEffect(() => {
@@ -34,7 +37,14 @@ export default function Home() {
     const initializeUser = async () => {
       if (session?.user) {
         try {
-          await saveUserToDatabase(session.user)
+          // Fetch user details including timezone
+          const userDetails = await getUserDetails(session.user.email);
+          if (userDetails) {
+            session.user.timezone = userDetails.timezone; // Set timezone from user details
+            setUserTimezone(userDetails.timezone); // Set user timezone state
+            setTimezoneSelected(!!userDetails.timezone); // Check if timezone is selected
+          }
+          await saveUserToDatabase(session.user);
         } catch (error) {
           console.error("Failed to save user to database:", error)
         }
@@ -90,6 +100,19 @@ export default function Home() {
     }
   }
 
+  const handleTimezoneSelect = async (timezone) => {
+    if (session?.user) {
+      try {
+        // Update user data with selected timezone
+        await saveUserToDatabase({ ...session.user, timezone })
+        setUserTimezone(timezone); // Update user timezone state
+        setTimezoneSelected(true); // Mark timezone as selected
+      } catch (error) {
+        console.error("Failed to save timezone:", error)
+      }
+    }
+  }
+
   if (status === "loading") {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -97,6 +120,13 @@ export default function Home() {
   if (session) {
     return (
       <div className="min-h-screen flex flex-col items-center p-8 bg-gray-50">
+        {/* Display user's timezone if selected */}
+        {timezoneSelected ? (
+          <div className="mb-4">Your selected timezone: {userTimezone}</div>
+        ) : (
+          <TimezoneSelector onTimezoneSelect={handleTimezoneSelect} />
+        )}
+
         {/* Header */}
         <div className="w-full max-w-4xl flex items-center justify-between mb-8 bg-white p-4 rounded-lg shadow">
           <div className="flex items-center gap-4">
