@@ -9,6 +9,10 @@ export default function GroupList({ session }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedGroup, setExpandedGroup] = useState(null);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [addingMember, setAddingMember] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+  const [updateSuccess, setUpdateSuccess] = useState('');
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -42,6 +46,50 @@ export default function GroupList({ session }) {
 
   const toggleGroup = (groupId) => {
     setExpandedGroup(expandedGroup === groupId ? null : groupId);
+  };
+
+  const handleAddMember = async (groupId) => {
+    setAddingMember(true);
+    setUpdateError('');
+    setUpdateSuccess('');
+
+    try {
+      const response = await fetch('/api/groups/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          groupId,
+          newMembers: [newMemberEmail]
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to add member');
+      }
+
+      // Update local state
+      setGroups(groups.map(group => {
+        if (group.id === groupId) {
+          return {
+            ...group,
+            members: [...group.members, newMemberEmail]
+          };
+        }
+        return group;
+      }));
+
+      setNewMemberEmail('');
+      setUpdateSuccess('Member added successfully!');
+    } catch (error) {
+      console.error('Add member error:', error);
+      setUpdateError(error.message || 'Failed to add member');
+    } finally {
+      setAddingMember(false);
+    }
   };
 
   if (loading) {
@@ -82,11 +130,10 @@ export default function GroupList({ session }) {
                 </div>
               </div>
               
-              {/* Members dropdown */}
               {expandedGroup === group.id && (
                 <div className="mt-4 pl-4 border-l-2 border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Members:</h4>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 mb-4">
                     {group.members.map((member, index) => (
                       <li 
                         key={index} 
@@ -100,6 +147,32 @@ export default function GroupList({ session }) {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Add member form */}
+                  <div className="mt-4 space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        placeholder="Enter email to add member"
+                        className="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={() => handleAddMember(group.id)}
+                        disabled={addingMember || !newMemberEmail}
+                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {addingMember ? 'Adding...' : 'Add'}
+                      </button>
+                    </div>
+                    {updateError && (
+                      <p className="text-sm text-red-600">{updateError}</p>
+                    )}
+                    {updateSuccess && (
+                      <p className="text-sm text-green-600">{updateSuccess}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
