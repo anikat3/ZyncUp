@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { db } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { findAvailableSlots } from '@/utils/availability';
 
 export async function POST(request) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { groupId } = body;
+    const { groupId, duration = 60 } = body;
 
     // Get group details
     const groupRef = doc(db, "groups", groupId);
@@ -29,58 +30,31 @@ export async function POST(request) {
       members.map(async (memberEmail) => {
         const eventRef = doc(db, 'calendar_events', memberEmail);
         const eventDoc = await getDoc(eventRef);
-        if (eventDoc.exists()) {
-          return eventDoc.data().events || [];
-        }
-        return [];
+        return eventDoc.exists() ? eventDoc.data().events || [] : [];
       })
     );
 
-    // Find available time slots (9 AM to 5 PM for the next 7 days)
-    const availableSlots = [];
-    const now = new Date();
-    const startHour = 9; // 9 AM
-    const endHour = 17;  // 5 PM
-    
-    for (let day = 0; day < 7; day++) {
-      const currentDate = new Date(now);
-      currentDate.setDate(currentDate.getDate() + day);
-      
-      for (let hour = startHour; hour < endHour; hour++) {
-        const slotStart = new Date(currentDate);
-        slotStart.setHours(hour, 0, 0, 0);
-        
-        const slotEnd = new Date(slotStart);
-        slotEnd.setHours(hour + 1);
+    // Combine all events
+    const allEvents = memberEvents.flat();
 
-        // Skip slots in the past
-        if (slotStart < now) continue;
+    // Find available slots
+    const availableSlots = findAvailableSlots(allEvents, duration);
 
-        // Check if any member has a meeting during this slot
-        const isSlotAvailable = memberEvents.every(memberEventList => {
-          return memberEventList.every(event => {
-            const eventStart = new Date(event.start.dateTime || event.start.date);
-            const eventEnd = new Date(event.end.dateTime || event.end.date);
-            return slotEnd <= eventStart || slotStart >= eventEnd;
-          });
-        });
+    // Format slots for response
+    const formattedSlots = availableSlots.map(slot => ({
+      start: slot.start.toISOString(),
+      end: slot.end.toISOString(),
+      duration: duration
+    }));
 
-        if (isSlotAvailable) {
-          availableSlots.push({
-            start: slotStart.toISOString(),
-            end: slotEnd.toISOString()
-          });
-        }
-      }
-    }
-
-    return Response.json({ availableSlots });
+    return Response.json({ 
+      slots: formattedSlots,
+      groupName: groupDoc.data().group_name,
+      memberCount: members.length
+    });
 
   } catch (error) {
     console.error('Availability calculation error:', error);
-    return Response.json({ 
-      error: 'Failed to calculate availability',
-      details: error.message 
-    }, { status: 500 });
+    return Response.json({ error: 'Failed to calculate availability' }, { status: 500 });
   }
 } 

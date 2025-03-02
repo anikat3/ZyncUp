@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { db } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
+import AvailabilityFinder from './AvailabilityFinder';
 
 export default function GroupList({ session }) {
   const [groups, setGroups] = useState([]);
@@ -230,6 +231,10 @@ export default function GroupList({ session }) {
                     {updateSuccess && (
                       <p className="text-sm text-green-600">{updateSuccess}</p>
                     )}
+                  </div>
+
+                  <div className="mt-4">
+                    <AvailabilityFinder groupId={group.id} />
                   </div>
                 </div>
               )}
