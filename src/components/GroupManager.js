@@ -5,9 +5,9 @@ import { useState } from 'react';
 export default function GroupManager({ session }) {
   const [groupName, setGroupName] = useState('');
   const [memberEmails, setMemberEmails] = useState(['']);
-  const [inviteLink, setInviteLink] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleAddEmail = () => {
     setMemberEmails([...memberEmails, '']);
@@ -30,12 +30,10 @@ export default function GroupManager({ session }) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess(false);
     
-    // Filter out empty emails and add the creator's email
-    const validEmails = [
-      session.user.email,
-      ...memberEmails.filter(email => email.trim() !== '')
-    ];
+    // Filter out empty emails
+    const validEmails = memberEmails.filter(email => email.trim() !== '');
     
     try {
       const response = await fetch('/api/groups/create', {
@@ -55,8 +53,7 @@ export default function GroupManager({ session }) {
         throw new Error(data.error || data.details || 'Failed to create group');
       }
 
-      const link = `${window.location.origin}/join?token=${data.inviteToken}`;
-      setInviteLink(link);
+      setSuccess(true);
       setGroupName('');
       setMemberEmails(['']);
     } catch (error) {
@@ -68,42 +65,35 @@ export default function GroupManager({ session }) {
   };
 
   return (
-    <div className="w-full max-w-4xl bg-white rounded-lg shadow p-6 mt-8">
-      <h2 className="text-2xl font-semibold mb-6">Create a Group</h2>
-      
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Create New Group</h2>
       <form onSubmit={handleCreateGroup} className="space-y-4">
         <div>
-          <label htmlFor="groupName" className="block text-sm font-medium text-gray-700">
-            Group Name
-          </label>
+          <label className="block text-sm font-medium text-gray-700">Group Name</label>
           <input
             type="text"
-            id="groupName"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
             required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Member Emails
-          </label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Member Emails</label>
           {memberEmails.map((email, index) => (
             <div key={index} className="flex gap-2">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => handleEmailChange(index, e.target.value)}
-                placeholder="member@example.com"
-                className="flex-1 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               {memberEmails.length > 1 && (
                 <button
                   type="button"
                   onClick={() => handleRemoveEmail(index)}
-                  className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                  className="px-2 py-1 text-red-600 hover:text-red-800"
                 >
                   Remove
                 </button>
@@ -113,51 +103,28 @@ export default function GroupManager({ session }) {
           <button
             type="button"
             onClick={handleAddEmail}
-            className="text-blue-500 hover:text-blue-600 text-sm font-medium"
+            className="text-sm text-blue-600 hover:text-blue-800"
           >
             + Add another member
           </button>
         </div>
-        
+
+        {error && (
+          <div className="text-red-600 text-sm">{error}</div>
+        )}
+
+        {success && (
+          <div className="text-green-600 text-sm">Group created successfully!</div>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
           {loading ? 'Creating...' : 'Create Group'}
         </button>
       </form>
-
-      {error && (
-        <div className="mt-4 text-red-500">
-          {error}
-        </div>
-      )}
-
-      {inviteLink && (
-        <div className="mt-4">
-          <h3 className="text-lg font-medium mb-2">Invite Link:</h3>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inviteLink}
-              readOnly
-              className="flex-1 p-2 border rounded"
-            />
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(inviteLink);
-                alert('Link copied to clipboard!');
-              }}
-              className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
