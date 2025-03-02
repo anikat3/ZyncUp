@@ -13,6 +13,7 @@ export default function GroupList({ session }) {
   const [addingMember, setAddingMember] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState('');
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -92,6 +93,42 @@ export default function GroupList({ session }) {
     }
   };
 
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingGroup(true);
+    setUpdateError('');
+    setUpdateSuccess('');
+
+    try {
+      const response = await fetch('/api/groups/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ groupId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to delete group');
+      }
+
+      // Remove the group from local state
+      setGroups(groups.filter(group => group.id !== groupId));
+      setUpdateSuccess('Group deleted successfully!');
+      setExpandedGroup(null);
+    } catch (error) {
+      console.error('Delete group error:', error);
+      setUpdateError(error.message || 'Failed to delete group');
+    } finally {
+      setDeletingGroup(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-4">Loading groups...</div>;
   }
@@ -110,11 +147,11 @@ export default function GroupList({ session }) {
               key={group.id} 
               className="bg-white rounded-lg shadow-md p-4 transition-all duration-200"
             >
-              <div 
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => toggleGroup(group.id)}
-              >
-                <div>
+              <div className="flex items-center justify-between">
+                <div 
+                  className="flex-grow cursor-pointer"
+                  onClick={() => toggleGroup(group.id)}
+                >
                   <h3 className="text-lg font-semibold">{group.group_name}</h3>
                   <p className="text-sm text-gray-500">
                     Created by: {group.created_by}
@@ -124,6 +161,15 @@ export default function GroupList({ session }) {
                   <span className="text-sm text-gray-500">
                     {group.members.length} members
                   </span>
+                  {group.created_by === session.user.email && (
+                    <button
+                      onClick={() => handleDeleteGroup(group.id)}
+                      disabled={deletingGroup}
+                      className="px-3 py-1 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {deletingGroup ? 'Deleting...' : 'Delete'}
+                    </button>
+                  )}
                   <span className="text-xl text-gray-500">
                     {expandedGroup === group.id ? '▼' : '▶'}
                   </span>
