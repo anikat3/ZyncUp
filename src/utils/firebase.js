@@ -14,6 +14,7 @@ export async function saveUserToDatabase(user) {
       image: user.image,
       lastLogin: new Date(),
       updatedAt: new Date(),
+      timezone: user.timezone || null,
     };
 
     if (!userDoc.exists()) {
@@ -149,7 +150,8 @@ export async function getUserDetails(email) {
       name: userDoc.data().name,
       image: userDoc.data().image,
       groups: userDoc.data().groups || [],
-      calendars: userDoc.data().calendars || []
+      calendars: userDoc.data().calendars || [],
+      timezone: userDoc.data().timezone || null,
     };
   }
   

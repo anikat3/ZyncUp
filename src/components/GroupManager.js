@@ -103,7 +103,7 @@ export default function GroupManager({ session }) {
           <button
             type="button"
             onClick={handleAddEmail}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="text-sm text-[#B5C9B7] hover:text-[#9DB7A0]"
           >
             + Add another member
           </button>
@@ -119,10 +119,9 @@ export default function GroupManager({ session }) {
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          className="w-full px-4 py-2 bg-[#B5C9B7] text-white rounded-md hover:bg-[#9DB7A0] transition-colors"
         >
-          {loading ? 'Creating...' : 'Create Group'}
+          Create Group
         </button>
       </form>
     </div>

@@ -4,6 +4,7 @@ import { authOptions } from "../auth/[...nextauth]/route";
 import { saveCalendarEvents } from '@/utils/firebase';
 import { db } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { format } from 'date-fns-tz';
 
 export async function GET() {
   try {
@@ -47,7 +48,6 @@ export async function GET() {
       timeMax: timeMax.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
-      // Remove maxResults to get all events in the time range
     });
 
     if (!response.data.items) {
@@ -55,10 +55,29 @@ export async function GET() {
       return Response.json({ error: 'No events found' }, { status: 404 });
     }
 
-    // Save events to Firebase with group information
-    await saveCalendarEvents(session.user.email, response.data.items, groupIds);
+    // Convert event times to user's local timezone
+    const userTimezone = session.user.timezone || 'UTC'; // Default to UTC if no timezone is set
+    const convertedEvents = response.data.items.map(event => {
+      const startDateTime = event.start.dateTime || event.start.date;
+      const endDateTime = event.end.dateTime || event.end.date;
 
-    return Response.json(response.data.items);
+      return {
+        ...event,
+        start: {
+          ...event.start,
+          dateTime: format(new Date(startDateTime), 'yyyy-MM-dd\'T\'HH:mm:ssXXX', { timeZone: userTimezone }),
+        },
+        end: {
+          ...event.end,
+          dateTime: format(new Date(endDateTime), 'yyyy-MM-dd\'T\'HH:mm:ssXXX', { timeZone: userTimezone }),
+        },
+      };
+    });
+
+    // Save events to Firebase with group information
+    await saveCalendarEvents(session.user.email, convertedEvents, groupIds);
+
+    return Response.json(convertedEvents);
   } catch (error) {
     console.error('Calendar API Error:', error);
     if (error.message.includes('invalid_grant')) {
