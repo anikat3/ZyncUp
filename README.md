@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ZyncUp - Group Schedule Synchronization App
 
-## Getting Started
+ZyncUp is a powerful scheduling application that helps groups of friends find common free time slots across different time zones. It integrates with Google Calendar to automatically sync schedules and considers each user's wake and sleep times.
 
-First, run the development server:
+## Features
 
+- User authentication and profile management
+- Time zone support
+- Google Calendar integration
+- Group creation and management
+- Automatic schedule synchronization
+- Smart free time slot detection
+- Cross-time zone scheduling
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- MongoDB
+- Google Cloud Platform account with Calendar API enabled
+- Gmail account for email notifications
+
+## Setup
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/zyncup.git
+cd zyncup
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+3. Create a `.env` file in the root directory with the following variables:
+```
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/zyncup
+JWT_SECRET=your_jwt_secret_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+EMAIL_SERVICE=gmail
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_email_app_password
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Set up Google Calendar API:
+   - Go to Google Cloud Console
+   - Create a new project
+   - Enable Google Calendar API
+   - Create OAuth 2.0 credentials
+   - Add the redirect URI
+   - Copy the client ID and client secret to your `.env` file
 
-## Learn More
+5. Start the server:
+```bash
+# Development
+npm run dev
 
-To learn more about Next.js, take a look at the following resources:
+# Production
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Endpoints
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Authentication
+- POST `/api/users/register` - Register a new user
+- POST `/api/users/login` - Login user
 
-## Deploy on Vercel
+### Profile
+- GET `/api/users/profile` - Get user profile
+- PATCH `/api/users/profile` - Update user profile
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Groups
+- POST `/api/groups` - Create a new group
+- GET `/api/groups` - Get user's groups
+- GET `/api/groups/:groupId` - Get specific group
+- POST `/api/groups/:groupId/invite` - Invite user to group
+- POST `/api/groups/:groupId/accept` - Accept group invitation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Calendar
+- GET `/api/calendar/auth/google` - Get Google Calendar auth URL
+- GET `/api/calendar/auth/google/callback` - Handle Google Calendar callback
+- GET `/api/calendar/group/:groupId/free-slots` - Get group's common free slots
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
